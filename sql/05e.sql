@@ -20,3 +20,15 @@
  */
 
 
+SELECT title
+FROM (
+    SELECT f2.title, count(f2.title) AS "count"
+    FROM film f1
+    JOIN film_category fc1 ON fc1.film_id = f1.film_id
+    JOIN film_category fc2 ON fc1.category_id = fc2.category_id
+    JOIN film f2 ON f2.film_id = fc2.film_id
+    WHERE f1.title = 'AMERICAN CIRCUS'
+    GROUP BY f2.title
+) t
+WHERE "count" >= 2
+ORDER BY title ASC;
