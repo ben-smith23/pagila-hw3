@@ -4,3 +4,6 @@
  *
  * Write a SQL query that finds all action fanatics.
  */
+
+SELECT customer.customer_id, customer.first_name, customer.last_name
+FROM customer

@@ -1,5 +1,5 @@
 # pagila-hw3
-[![](https://github.com/mikeizbicki/pagila-hw3/workflows/tests/badge.svg)](https://github.com/mikeizbicki/pagila-hw3/actions?query=workflow%3Atests)
+[![](https://github.com/ben-smith23/pagila-hw3/workflows/tests/badge.svg)](https://github.com/ben-smith23/pagila-hw3/actions?query=workflow%3Atests)
 
 ## Tasks
 
@@ -98,7 +98,7 @@
     > One of the purposes of this assignment is to familiarize you with this concept.
 
 
-1. Complete the test cases in the same way that you did for the [pagila-hw](https://github.com/mikeizbicki/pagila-hw) assignment.
+1. Complete the test cases in the same way that you did for the [pagila-hw](https://github.com/ben-smith23/pagila-hw) assignment.
 
     > **NOTE:**
     > When you upload to github,
