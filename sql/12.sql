@@ -8,7 +8,7 @@
 WITH RecentRentals AS (
     SELECT customer.customer_id
     FROM customer
-    JOIN LATERAL (
+    LEFT JOIN LATERAL (
         SELECT rental.rental_id, inventory.film_id
         FROM rental
         JOIN inventory ON rental.inventory_id = inventory.inventory_id

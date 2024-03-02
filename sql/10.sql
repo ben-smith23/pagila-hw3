@@ -13,26 +13,23 @@
 WITH TotalPayments AS (
   SELECT
     payment.customer_id,
-    (customer.first_name || ' ' || customer.last_name) AS "name",
     SUM(payment.amount) AS "total_payment"
   FROM payment
-  JOIN customer ON payment.customer_id = customer.customer_id
-  GROUP BY payment.customer_id, customer.first_name, customer.last_name
+  GROUP BY payment.customer_id
 ),
 PercentileRanks AS (
   SELECT
     customer_id,
-    "name",
     "total_payment",
-    PERCENT_RANK() OVER (ORDER BY "total_payment" DESC) * 100 AS percentile_rank
-  FROM TotalPayments
+    NTILE(100) OVER (ORDER BY total_payment ASC) AS percentile
+    FROM TotalPayments
 )
 SELECT
-  customer_id,
-  "name",
-  "total_payment",
-  CAST(ROUND(percentile_rank) AS INTEGER) AS "percentile" -- Explicitly rounding and casting to INTEGER
-FROM PercentileRanks
-WHERE percentile_rank >= 90
-ORDER BY "name";
-
+  c.customer_id,
+  (c.first_name || ' ' || c.last_name) AS "name",
+  p.total_payment,
+  p.percentile
+FROM customer c
+JOIN PercentileRanks p ON c.customer_id = p.customer_id
+WHERE p.percentile > 89
+ORDER BY "name" ASC;
