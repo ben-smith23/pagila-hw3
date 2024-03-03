@@ -14,7 +14,7 @@ WITH FilmRevenue AS (
   SELECT
     fa.actor_id,
     f.film_id,
-    SUM(p.amount) AS total_revenue
+    SUM(p.amount) AS revenue
   FROM
     film f
     JOIN inventory i ON f.film_id = i.film_id
@@ -28,8 +28,8 @@ RankedFilms AS (
   SELECT
     fr.actor_id,
     fr.film_id,
-    fr.total_revenue,
-    rank() OVER (PARTITION BY fr.actor_id ORDER BY fr.total_revenue DESC) AS revenue_rank
+    fr.revenue,
+    ROW_NUMBER() OVER (PARTITION BY fr.actor_id ORDER BY fr.revenue DESC) AS rank
   FROM
     FilmRevenue fr
 )
@@ -38,12 +38,15 @@ SELECT
   a.first_name,
   a.last_name,
   rf.film_id,
-  rf.total_revenue
+  f.title,
+  rf.rank,
+  rf.revenue
 FROM
   RankedFilms rf
   JOIN actor a ON rf.actor_id = a.actor_id
+  JOIN film f ON rf.film_id = f.film_id
 WHERE
-  rf.revenue_rank <= 3
+  rf.rank <= 3
 ORDER BY
-  a.actor_id, rf.revenue_rank;
+  a.actor_id, rf.rank;
 

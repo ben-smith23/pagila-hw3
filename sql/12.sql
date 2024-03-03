@@ -6,22 +6,36 @@
  */
 
 WITH RecentRentals AS (
-    SELECT customer.customer_id
-    FROM customer
-    LEFT JOIN LATERAL (
-        SELECT rental.rental_id, inventory.film_id
-        FROM rental
-        JOIN inventory ON rental.inventory_id = inventory.inventory_id
-        WHERE rental.customer_id = customer.customer_id
-        ORDER BY rental.rental_date DESC
-        LIMIT 5
-    ) AS recent_rentals ON true
-    JOIN film ON recent_rentals.film_id = film.film_id
-    JOIN film_category ON film.film_id = film_category.film_id
-    JOIN category ON film_category.category_id = category.category_id
-    GROUP BY customer.customer_id
-    HAVING SUM(CASE WHEN category.name = 'Action' THEN 1 ELSE 0 END) >= 4
+  SELECT
+    r.customer_id,
+    r.inventory_id,
+    r.rental_date,
+    ROW_NUMBER() OVER (PARTITION BY r.customer_id ORDER BY r.rental_date DESC) AS rental_rank
+  FROM rental r
+),
+CategorizedRentals AS (
+  SELECT
+    rr.customer_id,
+    fc.category_id
+  FROM RecentRentals rr
+  JOIN inventory i ON rr.inventory_id = i.inventory_id
+  JOIN film_category fc ON i.film_id = fc.film_id
+  WHERE rr.rental_rank <= 5
+),
+ActionFanatics AS (
+  SELECT
+    cr.customer_id,
+    COUNT(*) AS action_count
+  FROM CategorizedRentals cr
+  JOIN category c ON cr.category_id = c.category_id
+  WHERE c.name = 'Action'
+  GROUP BY cr.customer_id
+  HAVING COUNT(*) >= 4
 )
-SELECT customer.customer_id, customer.first_name, customer.last_name
-FROM customer
-JOIN RecentRentals ON customer.customer_id = RecentRentals.customer_id;
+SELECT
+  cu.customer_id,
+  cu.first_name,
+  cu.last_name
+FROM customer cu
+JOIN ActionFanatics af ON cu.customer_id = af.customer_id
+ORDER BY cu.customer_id;
