@@ -5,37 +5,20 @@
  * Write a SQL query that finds all action fanatics.
  */
 
-WITH RecentRentals AS (
-  SELECT
-    r.customer_id,
-    r.inventory_id,
-    r.rental_date,
-    ROW_NUMBER() OVER (PARTITION BY r.customer_id ORDER BY r.rental_date DESC) AS rental_rank
-  FROM rental r
-),
-CategorizedRentals AS (
-  SELECT
-    rr.customer_id,
-    fc.category_id
-  FROM RecentRentals rr
-  JOIN inventory i ON rr.inventory_id = i.inventory_id
-  JOIN film_category fc ON i.film_id = fc.film_id
-  WHERE rr.rental_rank <= 5
-),
-ActionFanatics AS (
-  SELECT
-    cr.customer_id,
-    COUNT(*) AS action_count
-  FROM CategorizedRentals cr
-  JOIN category c ON cr.category_id = c.category_id
-  WHERE c.name = 'Action'
-  GROUP BY cr.customer_id
-  HAVING COUNT(*) >= 4
-)
-SELECT
-  cu.customer_id,
-  cu.first_name,
-  cu.last_name
-FROM customer cu
-JOIN ActionFanatics af ON cu.customer_id = af.customer_id
-ORDER BY cu.customer_id;
+SELECT c.customer_id, c.first_name, c.last_name
+FROM customer c
+LEFT JOIN LATERAL (
+    SELECT COUNT(*) AS action_count
+    FROM (
+        SELECT f.film_id
+        FROM rental r
+        JOIN inventory i ON r.inventory_id = i.inventory_id
+        JOIN film f ON i.film_id = f.film_id
+        JOIN film_category fc ON f.film_id = fc.film_id
+        JOIN category cat ON fc.category_id = cat.category_id
+        WHERE r.customer_id = c.customer_id AND cat.name = 'Action'
+        ORDER BY r.rental_date DESC
+        LIMIT 5
+    ) AS recent_rentals
+) AS action_movies ON TRUE
+WHERE action_movies.action_count >= 4;

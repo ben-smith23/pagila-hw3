@@ -8,39 +8,28 @@
  * but in this query, you are ranking by the total number of times the movie has been rented (and ignoring the price).
  */
 
-WITH FilmRentals AS (
-  SELECT
-    c.name AS category_name,
-    f.title,
-    f.film_id,
-    COUNT(r.rental_id) AS "total rentals"
-  FROM
-    rental r
-    JOIN inventory i ON r.inventory_id = i.inventory_id
-    JOIN film f ON i.film_id = f.film_id
+SELECT c.name, sub.title, COALESCE(sub.total_rentals, 0) AS "total rentals"
+FROM category c
+LEFT JOIN (
+    SELECT fc.category_id, f.title, COUNT(r.rental_id) AS total_rentals
+    FROM film f
+    LEFT JOIN inventory i ON f.film_id = i.film_id
+    LEFT JOIN rental r ON i.inventory_id = r.inventory_id
     JOIN film_category fc ON f.film_id = fc.film_id
-    JOIN category c ON fc.category_id = c.category_id
-  GROUP BY
-    c.name, f.title, f.film_id
-),
-RankedFilms AS (
-  SELECT
-    category_name,
-    title,
-    "total rentals",
-    film_id,
-   ROW_NUMBER() OVER (PARTITION BY category_name ORDER BY "total rentals" DESC) AS rank
-    FROM
-    FilmRentals
-)
-SELECT
-  category_name AS "name",
-  title,
-  "total rentals"
-FROM
-  RankedFilms
-WHERE
-  rank <= 5
-ORDER BY
-  category_name, "total rentals" DESC, title ASC;
+    GROUP BY fc.category_id, f.title
+) AS sub ON c.category_id = sub.category_id
+JOIN (
+    SELECT category_id, title,
+           ROW_NUMBER() OVER(PARTITION BY category_id ORDER BY total_rentals DESC, title DESC) as rn
+    FROM (
+        SELECT fc.category_id, f.title, COUNT(r.rental_id) AS total_rentals
+        FROM film f
+        LEFT JOIN inventory i ON f.film_id = i.film_id
+        LEFT JOIN rental r ON i.inventory_id = r.inventory_id
+        JOIN film_category fc ON f.film_id = fc.film_id
+        GROUP BY fc.category_id, f.title
+    ) AS ranking
+) AS ranked_movies ON ranked_movies.category_id = c.category_id AND ranked_movies.title = sub.title
+WHERE ranked_movies.rn <= 5
+ORDER BY c.name, "total rentals" DESC, sub.title;
 
